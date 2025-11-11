@@ -1,0 +1,61 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+authors = ["murilo ijanc' <murilo@ijanc.org>"]
+categories = ["development-tools", "web-programming"]
+homepage = "https://cep.is"
+keywords = ["parser"]
+license = "ISC"
+repository = "https://got.cep.is/?action=summary&path=edne"
+description = "A parser of eDNE written in Rust."
+
+edition = "2024"
+rust-version = "1.89.0"
+
+[workspace.lints.rust]
+absolute_paths_not_starting_with_crate = "warn"
+non_ascii_idents = "warn"
+unit-bindings = "warn"
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(coverage)', 'cfg(coverage_nightly)'] }
+tail_expr_drop_order = "warn"
+unsafe_op_in_unsafe_fn = "warn"
+unused_unsafe = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+
+[workspace.dependencies]
+edne = { version = "=0.1.0", path = "crates/edne" } # core
+
+[profile.dev]
+debug = false
+
+[profile.test]
+debug = false
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+strip = "symbols"
+debug = false
+panic = "abort"
+
+[profile.release-with-debug]
+inherits = "release"
+strip = false
+debug = true
+
+[profile.coverage]
+inherits = "release"
+opt-level = 2
+codegen-units = 256
+lto = "thin"
+debug-assertions = true
+overflow-checks = true
+
+[profile.dev-no-debug-assertions]
+inherits = "dev"
+debug-assertions = false

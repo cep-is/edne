@@ -1,0 +1,14 @@
+[alias]
+ck = "check --workspace --all-features --all-targets --locked"
+lint = "clippy --workspace --all-targets --all-features"
+codecov = "llvm-cov --workspace"
+benchmark = "bench -p oxc_benchmark"
+
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
+
+[target.i686-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
+
+[target.aarch64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
