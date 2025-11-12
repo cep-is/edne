@@ -25,3 +25,11 @@ pub use neighborhood::{Neighborhood, NeighborhoodId};
 
 pub mod cpc;
 pub use cpc::{Cpc, CpcId};
+
+pub mod big_user;
+pub use big_user::{BigUser, BigUserId, StreetId};
+
+pub mod operational_unit;
+pub use operational_unit::{
+    OperationalUnit, OperationalUnitId, PostBoxIndicator,
+};

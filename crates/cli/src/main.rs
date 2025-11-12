@@ -14,15 +14,19 @@
 // OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //
 
+use edne::parser::big_users::BigUsers;
 use edne::parser::cpcs::Cpcs;
 use edne::parser::localities::Localities;
 use edne::parser::neighborhoods::Neighborhoods;
+use edne::parser::operational_units::OperationalUnits;
 use std::{env, fs, process};
 
 enum FileType {
     Locality,
     Neighborhood,
     Cpc,
+    BigUser,
+    OperationalUnit,
 }
 
 fn print_usage(program: &str) {
@@ -32,11 +36,15 @@ fn print_usage(program: &str) {
     eprintln!("  locality      Parse LOG_LOCALIDADE.TXT file");
     eprintln!("  neighborhood  Parse LOG_BAIRRO.TXT file");
     eprintln!("  cpc           Parse LOG_CPC.TXT file");
+    eprintln!("  biguser       Parse LOG_GRANDE_USUARIO.TXT file");
+    eprintln!("  opunit        Parse LOG_UNID_OPER.TXT file");
     eprintln!();
     eprintln!("Examples:");
     eprintln!("  {} locality LOG_LOCALIDADE.TXT", program);
     eprintln!("  {} neighborhood LOG_BAIRRO.TXT", program);
     eprintln!("  {} cpc LOG_CPC.TXT", program);
+    eprintln!("  {} biguser LOG_GRANDE_USUARIO.TXT", program);
+    eprintln!("  {} opunit LOG_UNID_OPER.TXT", program);
 }
 
 fn main() {
@@ -51,6 +59,13 @@ fn main() {
         "locality" | "localidade" => FileType::Locality,
         "neighborhood" | "neighbourhood" | "bairro" => FileType::Neighborhood,
         "cpc" => FileType::Cpc,
+        "biguser" | "big-user" | "grande-usuario" | "grandeusuario" => {
+            FileType::BigUser
+        }
+        "opunit"
+        | "operational-unit"
+        | "unidade-operacional"
+        | "unidadeoperacional" => FileType::OperationalUnit,
         unknown => {
             eprintln!("Error: Unknown type '{}'", unknown);
             eprintln!();
@@ -75,6 +90,8 @@ fn main() {
         FileType::Locality => parse_localities(&bytes),
         FileType::Neighborhood => parse_neighborhoods(&bytes),
         FileType::Cpc => parse_cpcs(&bytes),
+        FileType::BigUser => parse_big_users(&bytes),
+        FileType::OperationalUnit => parse_operational_units(&bytes),
     }
 }
 
@@ -383,6 +400,207 @@ fn parse_cpcs(bytes: &[u8]) {
     for (locality_id, count) in locality_counts.iter().take(10) {
         println!("  Locality {}: {} CPCs", locality_id, count);
     }
+
+    println!();
+}
+
+fn parse_big_users(bytes: &[u8]) {
+    println!("Parsing big users...");
+
+    let big_users = match BigUsers::from_iso8859_1(bytes) {
+        Ok(data) => data,
+        Err(e) => {
+            eprintln!("Error parsing file: {}", e);
+            process::exit(1);
+        }
+    };
+
+    println!();
+    println!("═══════════════════════════════════════════════════════");
+    println!("  Successfully parsed {} big users", big_users.len());
+    println!("═══════════════════════════════════════════════════════");
+    println!();
+
+    println!("Big Users by State:");
+    println!("───────────────────────────────────────────────────────");
+
+    let mut by_uf: std::collections::HashMap<_, Vec<_>> =
+        std::collections::HashMap::new();
+    for (id, user) in big_users.iter() {
+        by_uf.entry(user.uf).or_default().push((id, user));
+    }
+
+    let mut ufs: Vec<_> = by_uf.keys().collect();
+    ufs.sort();
+
+    for uf in ufs {
+        let users = &by_uf[uf];
+        println!();
+        println!("{} ({} big users)", uf, users.len());
+        println!("───────────────────────────────────────────────────────");
+
+        let mut sorted_users = users.clone();
+        sorted_users.sort_by_key(|(id, _)| *id);
+
+        for (id, user) in sorted_users.iter().take(10) {
+            println!("  [{}] {}", id, user.name);
+            println!("      Address: {}", user.address);
+            print!(
+                "      CEP: {} (Locality: {}, Neighborhood: {}",
+                user.cep, user.locality_id, user.neighborhood_id
+            );
+            if let Some(street_id) = user.street_id {
+                print!(", Street: {}", street_id);
+            }
+            println!(")");
+            if let Some(abbrev) = &user.abbreviated_name {
+                println!("      Abbreviated: {}", abbrev);
+            }
+        }
+
+        if users.len() > 10 {
+            println!("  ... and {} more", users.len() - 10);
+        }
+    }
+
+    println!();
+    println!("═══════════════════════════════════════════════════════");
+    println!("  Summary");
+    println!("═══════════════════════════════════════════════════════");
+
+    let with_street =
+        big_users.iter().filter(|(_, u)| u.street_id.is_some()).count();
+    let without_street = big_users.len() - with_street;
+
+    println!();
+    println!("Statistics:");
+    println!("  Total big users:         {}", big_users.len());
+    println!(
+        "  With street ID:          {} ({:.1}%)",
+        with_street,
+        (with_street as f64 / big_users.len() as f64) * 100.0
+    );
+    println!(
+        "  Without street ID:       {} ({:.1}%)",
+        without_street,
+        (without_street as f64 / big_users.len() as f64) * 100.0
+    );
+
+    let mut by_locality: std::collections::HashMap<_, usize> =
+        std::collections::HashMap::new();
+    for (_, user) in big_users.iter() {
+        *by_locality.entry(user.locality_id).or_default() += 1;
+    }
+
+    println!("  Localities with users:   {}", by_locality.len());
+
+    println!();
+    println!("Top 10 localities by big user count:");
+    let mut locality_counts: Vec<_> = by_locality.iter().collect();
+    locality_counts.sort_by(|a, b| b.1.cmp(a.1));
+
+    for (locality_id, count) in locality_counts.iter().take(10) {
+        println!("  Locality {}: {} big users", locality_id, count);
+    }
+
+    println!();
+}
+
+fn parse_operational_units(bytes: &[u8]) {
+    println!("Parsing operational units...");
+
+    let units = match OperationalUnits::from_iso8859_1(bytes) {
+        Ok(data) => data,
+        Err(e) => {
+            eprintln!("Error parsing file: {}", e);
+            process::exit(1);
+        }
+    };
+
+    println!();
+    println!("═══════════════════════════════════════════════════════");
+    println!("  Successfully parsed {} operational units", units.len());
+    println!("═══════════════════════════════════════════════════════");
+    println!();
+
+    println!("Operational Units by State:");
+    println!("───────────────────────────────────────────────────────");
+
+    let mut by_uf: std::collections::HashMap<_, Vec<_>> =
+        std::collections::HashMap::new();
+    for (id, unit) in units.iter() {
+        by_uf.entry(unit.uf).or_default().push((id, unit));
+    }
+
+    let mut ufs: Vec<_> = by_uf.keys().collect();
+    ufs.sort();
+
+    for uf in ufs {
+        let unit_list = &by_uf[uf];
+        println!();
+        println!("{} ({} units)", uf, unit_list.len());
+        println!("───────────────────────────────────────────────────────");
+
+        let mut sorted_units = unit_list.clone();
+        sorted_units.sort_by_key(|(id, _)| *id);
+
+        for (id, unit) in sorted_units.iter().take(10) {
+            println!("  [{}] {}", id, unit.name);
+            println!("      Address: {}", unit.address);
+            print!(
+                "      CEP: {}, Post Box: {:?}",
+                unit.cep, unit.post_box_indicator
+            );
+            if let Some(street_id) = unit.street_id {
+                print!(", Street: {}", street_id);
+            }
+            println!();
+        }
+
+        if unit_list.len() > 10 {
+            println!("  ... and {} more", unit_list.len() - 10);
+        }
+    }
+
+    println!();
+    println!("═══════════════════════════════════════════════════════");
+    println!("  Summary");
+    println!("═══════════════════════════════════════════════════════");
+
+    let with_street =
+        units.iter().filter(|(_, u)| u.street_id.is_some()).count();
+    let without_street = units.len() - with_street;
+    let with_post_box = units
+        .iter()
+        .filter(|(_, u)| {
+            matches!(u.post_box_indicator, edne::PostBoxIndicator::Yes)
+        })
+        .count();
+    let without_post_box = units.len() - with_post_box;
+
+    println!();
+    println!("Statistics:");
+    println!("  Total operational units: {}", units.len());
+    println!(
+        "  With street ID:          {} ({:.1}%)",
+        with_street,
+        (with_street as f64 / units.len() as f64) * 100.0
+    );
+    println!(
+        "  Without street ID:       {} ({:.1}%)",
+        without_street,
+        (without_street as f64 / units.len() as f64) * 100.0
+    );
+    println!(
+        "  With post box:           {} ({:.1}%)",
+        with_post_box,
+        (with_post_box as f64 / units.len() as f64) * 100.0
+    );
+    println!(
+        "  Without post box:        {} ({:.1}%)",
+        without_post_box,
+        (without_post_box as f64 / units.len() as f64) * 100.0
+    );
 
     println!();
 }

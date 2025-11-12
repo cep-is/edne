@@ -16,10 +16,14 @@
 
 //! Error types used throughout the eDONE crate.
 
+pub use crate::models::big_user::{BigUserIdError, StreetIdError};
 pub use crate::models::cpc::CpcIdError;
 pub use crate::models::locality::{
     LocalityIdError, LocalitySituationError, LocalityTypeError,
 };
 pub use crate::models::neighborhood::NeighborhoodIdError;
+pub use crate::models::operational_unit::{
+    OperationalUnitIdError, PostBoxIndicatorError,
+};
 pub use crate::models::uf::UfParseError;
 pub use crate::parser::base::ParseError;
