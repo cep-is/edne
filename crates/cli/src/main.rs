@@ -14,6 +14,7 @@
 // OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //
 
+use edne::parser::addresses::Addresses;
 use edne::parser::big_users::BigUsers;
 use edne::parser::cpcs::Cpcs;
 use edne::parser::localities::Localities;
@@ -27,6 +28,7 @@ enum FileType {
     Cpc,
     BigUser,
     OperationalUnit,
+    Address,
 }
 
 fn print_usage(program: &str) {
@@ -38,6 +40,7 @@ fn print_usage(program: &str) {
     eprintln!("  cpc           Parse LOG_CPC.TXT file");
     eprintln!("  biguser       Parse LOG_GRANDE_USUARIO.TXT file");
     eprintln!("  opunit        Parse LOG_UNID_OPER.TXT file");
+    eprintln!("  address       Parse LOG_LOGRADOURO_XX.TXT file");
     eprintln!();
     eprintln!("Examples:");
     eprintln!("  {} locality LOG_LOCALIDADE.TXT", program);
@@ -45,6 +48,7 @@ fn print_usage(program: &str) {
     eprintln!("  {} cpc LOG_CPC.TXT", program);
     eprintln!("  {} biguser LOG_GRANDE_USUARIO.TXT", program);
     eprintln!("  {} opunit LOG_UNID_OPER.TXT", program);
+    eprintln!("  {} address LOG_LOGRADOURO_AC.TXT", program);
 }
 
 fn main() {
@@ -66,6 +70,7 @@ fn main() {
         | "operational-unit"
         | "unidade-operacional"
         | "unidadeoperacional" => FileType::OperationalUnit,
+        "address" | "logradouro" | "street" => FileType::Address,
         unknown => {
             eprintln!("Error: Unknown type '{}'", unknown);
             eprintln!();
@@ -92,6 +97,7 @@ fn main() {
         FileType::Cpc => parse_cpcs(&bytes),
         FileType::BigUser => parse_big_users(&bytes),
         FileType::OperationalUnit => parse_operational_units(&bytes),
+        FileType::Address => parse_addresses(&bytes),
     }
 }
 
@@ -600,6 +606,102 @@ fn parse_operational_units(bytes: &[u8]) {
         "  Without post box:        {} ({:.1}%)",
         without_post_box,
         (without_post_box as f64 / units.len() as f64) * 100.0
+    );
+
+    println!();
+}
+
+fn parse_addresses(bytes: &[u8]) {
+    println!("Parsing addresses (streets)...");
+
+    let addresses = match Addresses::from_iso8859_1(bytes) {
+        Ok(data) => data,
+        Err(e) => {
+            eprintln!("Error parsing file: {}", e);
+            process::exit(1);
+        }
+    };
+
+    println!();
+    println!("═══════════════════════════════════════════════════════");
+    println!("  Successfully parsed {} addresses", addresses.len());
+    println!("═══════════════════════════════════════════════════════");
+    println!();
+
+    println!("Addresses by State:");
+    println!("───────────────────────────────────────────────────────");
+
+    let mut by_uf: std::collections::HashMap<_, Vec<_>> =
+        std::collections::HashMap::new();
+    for (id, addr) in addresses.iter() {
+        by_uf.entry(addr.uf).or_default().push((id, addr));
+    }
+
+    let mut ufs: Vec<_> = by_uf.keys().collect();
+    ufs.sort();
+
+    for uf in ufs {
+        let addr_list = &by_uf[uf];
+        println!();
+        println!("{} ({} addresses)", uf, addr_list.len());
+        println!("───────────────────────────────────────────────────────");
+
+        let mut sorted_addrs = addr_list.clone();
+        sorted_addrs.sort_by_key(|(id, _)| *id);
+
+        for (id, addr) in sorted_addrs.iter().take(10) {
+            println!("  [{}] {} {}", id, addr.street_type, addr.name);
+            println!(
+                "      CEP: {}, Neighborhood: {}",
+                addr.cep, addr.neighborhood_id_start
+            );
+            if let Some(abbrev) = &addr.abbreviated_name {
+                println!("      Abbreviated: {}", abbrev);
+            }
+        }
+
+        if addr_list.len() > 10 {
+            println!("  ... and {} more", addr_list.len() - 10);
+        }
+    }
+
+    println!();
+    println!("═══════════════════════════════════════════════════════");
+    println!("  Summary");
+    println!("═══════════════════════════════════════════════════════");
+
+    let mut by_type: std::collections::HashMap<_, usize> =
+        std::collections::HashMap::new();
+    for (_, addr) in addresses.iter() {
+        *by_type.entry(&addr.street_type).or_default() += 1;
+    }
+
+    println!();
+    println!("By Street Type:");
+    let mut types: Vec<_> = by_type.iter().collect();
+    types.sort_by_key(|(_, count)| std::cmp::Reverse(*count));
+
+    for (street_type, count) in types.iter().take(10) {
+        println!("  {}: {} addresses", street_type, count);
+    }
+
+    let with_complement =
+        addresses.iter().filter(|(_, a)| a.complement.is_some()).count();
+    let with_abbrev =
+        addresses.iter().filter(|(_, a)| a.abbreviated_name.is_some()).count();
+
+    println!();
+    println!("Statistics:");
+    println!("  Total addresses:         {}", addresses.len());
+    println!(
+        "  With complement:         {} ({:.1}%)",
+        with_complement,
+        (with_complement as f64 / addresses.len() as f64) * 100.0
+    );
+    println!(
+        "  With abbreviation:       {} ({:.1}%)",
+        with_abbrev,
+        (with_abbrev as f64 / addresses.len() as f64) * 100.0
     );
 
     println!();

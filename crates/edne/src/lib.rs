@@ -50,7 +50,7 @@ pub mod parser;
 
 pub use error::ParseError;
 pub use models::{
-    BigUser, BigUserId, Cpc, CpcId, Locality, LocalityId, Neighborhood,
-    NeighborhoodId, OperationalUnit, OperationalUnitId, PostBoxIndicator,
-    StreetId, Uf,
+    Address, AddressId, BigUser, BigUserId, Cpc, CpcId, Locality, LocalityId,
+    Neighborhood, NeighborhoodId, OperationalUnit, OperationalUnitId,
+    PostBoxIndicator, StreetId, StreetTypeIndicator, Uf,
 };

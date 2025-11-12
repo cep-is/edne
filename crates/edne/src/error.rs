@@ -16,6 +16,7 @@
 
 //! Error types used throughout the eDONE crate.
 
+pub use crate::models::address::{AddressIdError, StreetTypeIndicatorError};
 pub use crate::models::big_user::{BigUserIdError, StreetIdError};
 pub use crate::models::cpc::CpcIdError;
 pub use crate::models::locality::{

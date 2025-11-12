@@ -33,3 +33,6 @@ pub mod operational_unit;
 pub use operational_unit::{
     OperationalUnit, OperationalUnitId, PostBoxIndicator,
 };
+
+pub mod address;
+pub use address::{Address, AddressId, StreetTypeIndicator};

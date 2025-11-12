@@ -14,6 +14,7 @@
 // OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //
 
+pub mod addresses;
 pub mod base;
 pub mod big_users;
 pub mod cpcs;
