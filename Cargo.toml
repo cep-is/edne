@@ -4,12 +4,12 @@ members = ["crates/*"]
 
 [workspace.package]
 authors = ["murilo ijanc' <murilo@ijanc.org>"]
-categories = ["development-tools", "web-programming"]
+categories = ["parsing", "data-structures"]
 homepage = "https://cep.is"
-keywords = ["parser"]
+keywords = ["brazil", "postal", "cep", "address", "parser"]
 license = "ISC"
 repository = "https://got.cep.is/?action=summary&path=edne"
-description = "A parser of eDNE written in Rust."
+description = "Fast parser for Brazilian eDNE (National Address Directory) files"
 
 edition = "2024"
 rust-version = "1.89.0"
@@ -28,6 +28,8 @@ all = { level = "warn", priority = -1 }
 
 [workspace.dependencies]
 edne = { version = "=0.1.0", path = "crates/edne" } # core
+
+criterion = "0.7.0" # Statistics-driven micro-benchmarking library
 
 [profile.dev]
 debug = false
