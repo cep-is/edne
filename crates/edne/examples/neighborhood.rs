@@ -14,7 +14,7 @@
 // OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //
 
-use edne::models::{LocalityId, NeighborhoodId, Uf};
+use edne::models::{LocalityId, NeighborhoodId};
 use edne::parser::neighborhoods::Neighborhoods;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -36,7 +36,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 39329@AC@2@Centro@Centro
 39330@AC@19@Centro@Centro";
 
-    println!("=== eDNE Neighborhoods Parser Example ===\n");
+    println!("=== eDONE Neighborhoods Parser Example ===\n");
 
     // Parse neighborhoods
     let neighborhoods = Neighborhoods::from_utf8(sample_data.to_string())?;

@@ -4,4 +4,4 @@
 - [~] Locality
 - [ ] Logradouro
 - [ ] Grade usuário
-- [ ] Unidade Operacional
+- [ ] Unidade Operational

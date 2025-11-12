@@ -22,3 +22,6 @@ pub use uf::Uf;
 
 pub mod neighborhood;
 pub use neighborhood::{Neighborhood, NeighborhoodId};
+
+pub mod cpc;
+pub use cpc::{Cpc, CpcId};

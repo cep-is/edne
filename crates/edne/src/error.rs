@@ -14,8 +14,9 @@
 // OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //
 
-//! Error types used throughout the eDNE crate.
+//! Error types used throughout the eDONE crate.
 
+pub use crate::models::cpc::CpcIdError;
 pub use crate::models::locality::{
     LocalityIdError, LocalitySituationError, LocalityTypeError,
 };

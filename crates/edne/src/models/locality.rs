@@ -213,7 +213,7 @@ impl fmt::Display for LocalityTypeError {
 
 impl Error for LocalityTypeError {}
 
-/// Represents a Brazilian locality from the eDNE database.
+/// Represents a Brazilian locality from the eDONE database.
 ///
 /// A locality can be a municipality, district, or village with associated
 /// postal code information and geographic data.

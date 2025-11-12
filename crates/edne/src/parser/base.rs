@@ -16,10 +16,10 @@
 
 use std::{error::Error, fmt};
 
-/// Field separator used in eDNE files.
+/// Field separator used in eDONE files.
 pub const FIELD_SEPARATOR: char = '@';
 
-/// Errors that can occur during eDNE parsing.
+/// Errors that can occur during eDONE parsing.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseError {
     /// Failed to decode ISO-8859-1 bytes.
@@ -80,9 +80,9 @@ impl fmt::Display for ParseError {
 
 impl Error for ParseError {}
 
-/// Generic parser for eDNE text files.
+/// Generic parser for eDONE text files.
 ///
-/// This parser handles the common structure of eDNE files:
+/// This parser handles the common structure of eDONE files:
 /// - ISO-8859-1 encoding
 /// - One record per line
 /// - Fields separated by '@'

@@ -18,12 +18,12 @@ use std::{error::Error, fmt, str::FromStr};
 
 use crate::models::{LocalityId, Uf};
 
-/// Unique identifier for a neighborhood.
+/// Unique identifier for a community postal box (CPC).
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct NeighborhoodId(u32);
+pub struct CpcId(u32);
 
-impl NeighborhoodId {
-    /// Creates a new `NeighborhoodId`.
+impl CpcId {
+    /// Creates a new `CpcId`.
     ///
     /// # Arguments
     ///
@@ -38,73 +38,74 @@ impl NeighborhoodId {
     }
 }
 
-impl TryFrom<u32> for NeighborhoodId {
-    type Error = NeighborhoodIdError;
+impl TryFrom<u32> for CpcId {
+    type Error = CpcIdError;
 
     fn try_from(value: u32) -> Result<Self, Self::Error> {
         if value == 0 {
-            return Err(NeighborhoodIdError::Zero);
+            return Err(CpcIdError::Zero);
         }
         Ok(Self(value))
     }
 }
 
-impl FromStr for NeighborhoodId {
-    type Err = NeighborhoodIdError;
+impl FromStr for CpcId {
+    type Err = CpcIdError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let value = s
             .trim()
             .parse::<u32>()
-            .map_err(|_| NeighborhoodIdError::InvalidFormat(s.to_string()))?;
+            .map_err(|_| CpcIdError::InvalidFormat(s.to_string()))?;
         Self::try_from(value)
     }
 }
 
-impl fmt::Display for NeighborhoodId {
+impl fmt::Display for CpcId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
     }
 }
 
-/// Errors when parsing or creating a `NeighborhoodId`.
+/// Errors when parsing or creating a `CpcId`.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum NeighborhoodIdError {
+pub enum CpcIdError {
     /// ID cannot be zero.
     Zero,
     /// String is not a valid number.
     InvalidFormat(String),
 }
 
-impl fmt::Display for NeighborhoodIdError {
+impl fmt::Display for CpcIdError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Zero => write!(f, "neighborhood ID cannot be zero"),
+            Self::Zero => write!(f, "CPC ID cannot be zero"),
             Self::InvalidFormat(s) => {
-                write!(f, "invalid neighborhood ID format: '{}'", s)
+                write!(f, "invalid CPC ID format: '{}'", s)
             }
         }
     }
 }
 
-impl Error for NeighborhoodIdError {}
+impl Error for CpcIdError {}
 
-/// Represents a neighborhood from the eDONE database.
+/// Represents a Community Postal Box (Caixa Postal Comunitária) from the eDONE database.
 ///
-/// A neighborhood (bairro) is a subdivision within a locality,
-/// with optional abbreviated name.
+/// CPCs serve rural and peripheral urban areas not covered by home delivery.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Neighborhood {
-    /// Unique identifier for the neighborhood (BAI_NU).
-    pub id: NeighborhoodId,
+pub struct Cpc {
+    /// Unique identifier for the CPC (CPC_NU).
+    pub id: CpcId,
     /// Federative unit abbreviation (UFE_SG).
     pub uf: Uf,
-    /// Locality ID this neighborhood belongs to (LOC_NU).
+    /// Locality ID this CPC belongs to (LOC_NU).
     pub locality_id: LocalityId,
-    /// Name of the neighborhood (BAI_NO).
+    /// Name of the CPC (CPC_NO).
     pub name: String,
-    /// Abbreviated name of the neighborhood (BAI_NO_ABREV).
-    pub abbreviated_name: Option<String>,
+    /// Address of the CPC (CPC_ENDERECO).
+    pub address: String,
+    /// Postal code (CEP).
+    pub cep: String,
 }
 
 #[cfg(test)]
@@ -112,46 +113,46 @@ mod tests {
     use super::*;
 
     #[test]
-    fn neighborhood_id_new() {
-        let id = NeighborhoodId::new(55400);
-        assert_eq!(id.get(), 55400);
+    fn cpc_id_new() {
+        let id = CpcId::new(1285);
+        assert_eq!(id.get(), 1285);
     }
 
     #[test]
-    fn neighborhood_id_try_from_valid() {
-        let id = NeighborhoodId::try_from(39321).unwrap();
-        assert_eq!(id.get(), 39321);
+    fn cpc_id_try_from_valid() {
+        let id = CpcId::try_from(3788).unwrap();
+        assert_eq!(id.get(), 3788);
     }
 
     #[test]
-    fn neighborhood_id_try_from_zero() {
-        let result = NeighborhoodId::try_from(0);
+    fn cpc_id_try_from_zero() {
+        let result = CpcId::try_from(0);
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), NeighborhoodIdError::Zero);
+        assert_eq!(result.unwrap_err(), CpcIdError::Zero);
     }
 
     #[test]
-    fn neighborhood_id_from_str_valid() {
-        let id = NeighborhoodId::from_str("55400").unwrap();
-        assert_eq!(id.get(), 55400);
+    fn cpc_id_from_str_valid() {
+        let id = CpcId::from_str("1285").unwrap();
+        assert_eq!(id.get(), 1285);
     }
 
     #[test]
-    fn neighborhood_id_from_str_invalid() {
-        let result = NeighborhoodId::from_str("abc");
+    fn cpc_id_from_str_invalid() {
+        let result = CpcId::from_str("abc");
         assert!(result.is_err());
     }
 
     #[test]
-    fn neighborhood_id_from_str_zero() {
-        let result = NeighborhoodId::from_str("0");
+    fn cpc_id_from_str_zero() {
+        let result = CpcId::from_str("0");
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), NeighborhoodIdError::Zero);
+        assert_eq!(result.unwrap_err(), CpcIdError::Zero);
     }
 
     #[test]
-    fn neighborhood_id_display() {
-        let id = NeighborhoodId::new(55400);
-        assert_eq!(id.to_string(), "55400");
+    fn cpc_id_display() {
+        let id = CpcId::new(1285);
+        assert_eq!(id.to_string(), "1285");
     }
 }

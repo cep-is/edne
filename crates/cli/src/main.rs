@@ -14,14 +14,15 @@
 // OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //
 
-use std::{env, fs, process};
-
+use edne::parser::cpcs::Cpcs;
 use edne::parser::localities::Localities;
 use edne::parser::neighborhoods::Neighborhoods;
+use std::{env, fs, process};
 
 enum FileType {
     Locality,
     Neighborhood,
+    Cpc,
 }
 
 fn print_usage(program: &str) {
@@ -30,10 +31,12 @@ fn print_usage(program: &str) {
     eprintln!("Types:");
     eprintln!("  locality      Parse LOG_LOCALIDADE.TXT file");
     eprintln!("  neighborhood  Parse LOG_BAIRRO.TXT file");
+    eprintln!("  cpc           Parse LOG_CPC.TXT file");
     eprintln!();
     eprintln!("Examples:");
     eprintln!("  {} locality LOG_LOCALIDADE.TXT", program);
     eprintln!("  {} neighborhood LOG_BAIRRO.TXT", program);
+    eprintln!("  {} cpc LOG_CPC.TXT", program);
 }
 
 fn main() {
@@ -47,6 +50,7 @@ fn main() {
     let file_type = match args[1].to_lowercase().as_str() {
         "locality" | "localidade" => FileType::Locality,
         "neighborhood" | "neighbourhood" | "bairro" => FileType::Neighborhood,
+        "cpc" => FileType::Cpc,
         unknown => {
             eprintln!("Error: Unknown type '{}'", unknown);
             eprintln!();
@@ -70,6 +74,7 @@ fn main() {
     match file_type {
         FileType::Locality => parse_localities(&bytes),
         FileType::Neighborhood => parse_neighborhoods(&bytes),
+        FileType::Cpc => parse_cpcs(&bytes),
     }
 }
 
@@ -294,6 +299,89 @@ fn parse_neighborhoods(bytes: &[u8]) {
 
     for (locality_id, count) in locality_counts.iter().take(10) {
         println!("  Locality {}: {} neighborhoods", locality_id, count);
+    }
+
+    println!();
+}
+
+fn parse_cpcs(bytes: &[u8]) {
+    println!("Parsing CPCs (Community Postal Boxes)...");
+
+    let cpcs = match Cpcs::from_iso8859_1(bytes) {
+        Ok(data) => data,
+        Err(e) => {
+            eprintln!("Error parsing file: {}", e);
+            process::exit(1);
+        }
+    };
+
+    println!();
+    println!("═══════════════════════════════════════════════════════");
+    println!("  Successfully parsed {} CPCs", cpcs.len());
+    println!("═══════════════════════════════════════════════════════");
+    println!();
+
+    // Print CPCs grouped by UF
+    println!("CPCs by State:");
+    println!("───────────────────────────────────────────────────────");
+
+    let mut by_uf: std::collections::HashMap<_, Vec<_>> =
+        std::collections::HashMap::new();
+    for (id, cpc) in cpcs.iter() {
+        by_uf.entry(cpc.uf).or_default().push((id, cpc));
+    }
+
+    let mut ufs: Vec<_> = by_uf.keys().collect();
+    ufs.sort();
+
+    for uf in ufs {
+        let cpc_list = &by_uf[uf];
+        println!();
+        println!("{} ({} CPCs)", uf, cpc_list.len());
+        println!("───────────────────────────────────────────────────────");
+
+        let mut sorted_cpcs = cpc_list.clone();
+        sorted_cpcs.sort_by_key(|(id, _)| *id);
+
+        for (id, cpc) in sorted_cpcs.iter().take(10) {
+            println!("  [{}] {}", id, cpc.name);
+            println!("      Address: {}", cpc.address);
+            println!("      CEP: {} (Locality: {})", cpc.cep, cpc.locality_id);
+        }
+
+        if cpc_list.len() > 10 {
+            println!("  ... and {} more", cpc_list.len() - 10);
+        }
+    }
+
+    println!();
+    println!("═══════════════════════════════════════════════════════");
+    println!("  Summary");
+    println!("═══════════════════════════════════════════════════════");
+
+    // Count by locality
+    let mut by_locality: std::collections::HashMap<_, usize> =
+        std::collections::HashMap::new();
+    for (_, cpc) in cpcs.iter() {
+        *by_locality.entry(cpc.locality_id).or_default() += 1;
+    }
+
+    println!();
+    println!("Statistics:");
+    println!("  Total CPCs:              {}", cpcs.len());
+    println!("  Localities with CPCs:    {}", by_locality.len());
+
+    let avg_per_locality = cpcs.len() as f64 / by_locality.len() as f64;
+    println!("  Average CPCs/locality:   {:.2}", avg_per_locality);
+
+    // Top localities by CPC count
+    println!();
+    println!("Top 10 localities by CPC count:");
+    let mut locality_counts: Vec<_> = by_locality.iter().collect();
+    locality_counts.sort_by(|a, b| b.1.cmp(a.1));
+
+    for (locality_id, count) in locality_counts.iter().take(10) {
+        println!("  Locality {}: {} CPCs", locality_id, count);
     }
 
     println!();

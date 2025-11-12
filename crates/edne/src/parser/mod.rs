@@ -15,6 +15,7 @@
 //
 
 pub mod base;
+pub mod cpcs;
 pub mod helpers;
 pub mod localities;
 pub mod neighborhoods;

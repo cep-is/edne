@@ -14,11 +14,11 @@
 // OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //
 
-//! # eDNE Parser
+//! # eDONE Parser
 //!
-//! Fast, low-memory parser for Brazilian National Address Directory (eDNE) files.
+//! Fast, low-memory parser for Brazilian National Address Directory (eDONE) files.
 //!
-//! eDNE files are text files encoded in ISO-8859-1, where each line represents
+//! eDONE files are text files encoded in ISO-8859-1, where each line represents
 //! a record and fields are separated by the '@' character.
 //!
 //! ## Features
@@ -49,4 +49,6 @@ pub mod models;
 pub mod parser;
 
 pub use error::ParseError;
-pub use models::{Locality, LocalityId, Neighborhood, NeighborhoodId, Uf};
+pub use models::{
+    Cpc, CpcId, Locality, LocalityId, Neighborhood, NeighborhoodId, Uf,
+};
