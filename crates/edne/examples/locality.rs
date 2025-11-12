@@ -28,7 +28,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 5@AC@Capixaba@69931000@0@M@@Capixaba@1200179
 6@AC@Cruzeiro do Sul@69980000@0@M@@Cruzeiro Sul@1200203";
 
-    println!("=== eDONE Localities Parser Example ===\n");
+    println!("=== eDNE Localities Parser Example ===\n");
 
     // Parse localities
     let localities = Localities::from_utf8(sample_data.to_string())?;

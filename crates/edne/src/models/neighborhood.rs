@@ -89,7 +89,7 @@ impl fmt::Display for NeighborhoodIdError {
 
 impl Error for NeighborhoodIdError {}
 
-/// Represents a neighborhood from the eDONE database.
+/// Represents a neighborhood from the eDNE database.
 ///
 /// A neighborhood (bairro) is a subdivision within a locality,
 /// with optional abbreviated name.

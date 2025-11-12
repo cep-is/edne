@@ -89,7 +89,7 @@ impl fmt::Display for CpcIdError {
 
 impl Error for CpcIdError {}
 
-/// Represents a Community Postal Box (Caixa Postal Comunitária) from the eDONE database.
+/// Represents a Community Postal Box (Caixa Postal Comunitária) from the eDNE database.
 ///
 /// CPCs serve rural and peripheral urban areas not covered by home delivery.
 #[derive(Debug, Clone, PartialEq, Eq)]

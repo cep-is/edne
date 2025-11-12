@@ -36,7 +36,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 5470@AL@31@Povoado Genipapeiro@Rua Manoel Francisco, s/n@57690992
 5471@AL@71@Usina Guaxuma@Avenida Gois n 11 - Usina Guaxuma@57230991";
 
-    println!("=== eDONE CPCs (Community Postal Boxes) Parser Example ===\n");
+    println!("=== eDNE CPCs (Community Postal Boxes) Parser Example ===\n");
 
     // Parse CPCs
     let cpcs = Cpcs::from_utf8(sample_data.to_string())?;

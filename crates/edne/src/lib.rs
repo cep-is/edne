@@ -14,11 +14,11 @@
 // OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //
 
-//! # eDONE Parser
+//! # eDNE Parser
 //!
-//! Fast, low-memory parser for Brazilian National Address Directory (eDONE) files.
+//! Fast, low-memory parser for Brazilian National Address Directory (eDNE) files.
 //!
-//! eDONE files are text files encoded in ISO-8859-1, where each line represents
+//! eDNE files are text files encoded in ISO-8859-1, where each line represents
 //! a record and fields are separated by the '@' character.
 //!
 //! ## Features

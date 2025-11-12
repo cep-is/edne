@@ -14,5 +14,11 @@ extend-ignore-re = [
 ]
 
 [default.extend-words]
+Flor = "Flor"
+Expedito = "Expedito"
+operacional = "operacional"
 
 [default.extend-identifiers]
+eDNE = "eDNE"
+BA = "BA"
+ba = "ba"

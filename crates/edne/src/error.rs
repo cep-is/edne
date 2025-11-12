@@ -14,7 +14,7 @@
 // OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //
 
-//! Error types used throughout the eDONE crate.
+//! Error types used throughout the eDNE crate.
 
 pub use crate::models::address::{AddressIdError, StreetTypeIndicatorError};
 pub use crate::models::big_user::{BigUserIdError, StreetIdError};
