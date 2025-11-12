@@ -14,6 +14,39 @@
 // OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //
 
+//! # eDNE Parser
+//!
+//! Fast, low-memory parser for Brazilian National Address Directory (eDNE) files.
+//!
+//! eDNE files are text files encoded in ISO-8859-1, where each line represents
+//! a record and fields are separated by the '@' character.
+//!
+//! ## Features
+//!
+//! - Zero-copy parsing where possible
+//! - Automatic ISO-8859-1 to UTF-8 conversion
+//! - Type-safe models with validation
+//! - Efficient HashMap-based collections
+//! - Comprehensive error handling
+//!
+//! ## Example
+//!
+//! ```rust
+//! use edne::parser::localities::Localities;
+//!
+// //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+// //! // Parse from ISO-8859-1 encoded bytes
+// //! let file_bytes = std::fs::read("localities.txt")?;
+// //! let localities = Localities::from_iso8859_1(&file_bytes)?;
+// //!
+// //! println!("Parsed {} localities", localities.len());
+// //! # Ok(())
+// //! # }
+// //! ```
+
 pub mod error;
-pub mod model;
+pub mod models;
 pub mod parser;
+
+pub use error::ParseError;
+pub use models::{Locality, LocalityId, Uf};

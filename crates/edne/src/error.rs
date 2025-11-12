@@ -14,25 +14,10 @@
 // OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //
 
-/// Parser errors kept simple and actionable.
-#[derive(Debug)]
-pub enum Error {
-    Io(std::io::Error),
-    /// Wrong number of fields in a line.
-    FieldCount {
-        line: u64,
-        got: usize,
-        expected: usize,
-    },
-    /// Failed to parse a numeric field.
-    ParseInt {
-        line: u64,
-        source: std::num::ParseIntError,
-    },
-}
+//! Error types used throughout the eDNE crate.
 
-impl From<std::io::Error> for Error {
-    fn from(e: std::io::Error) -> Self {
-        Error::Io(e)
-    }
-}
+pub use crate::models::locality::{
+    LocalityIdError, LocalitySituationError, LocalityTypeError,
+};
+pub use crate::models::uf::UfParseError;
+pub use crate::parser::base::ParseError;

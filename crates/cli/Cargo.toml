@@ -1,5 +1,5 @@
 [package]
-name = "edne"
+name = "edne-cli"
 version = "0.1.0"
 authors.workspace = true
 categories.workspace = true
@@ -9,16 +9,15 @@ keywords.workspace = true
 license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
-description.workspace = true
+description = "Command-line interface for parsing Brazilian eDNE files"
+
+[[bin]]
+name = "edne"
+path = "src/main.rs"
+doc = false
 
 [dependencies]
-
-[dev-dependencies]
-criterion.workspace = true
+edne.workspace = true
 
 [lints]
 workspace = true
-
-[[bench]]
-name = "localities_bench"
-harness = false

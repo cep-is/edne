@@ -14,6 +14,8 @@
 // OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //
 
-pub mod base;
-pub mod helpers;
-pub mod localities;
+pub mod locality;
+pub mod uf;
+
+pub use locality::{Locality, LocalityId, LocalitySituation, LocalityType};
+pub use uf::Uf;
