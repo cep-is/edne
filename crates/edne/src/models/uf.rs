@@ -53,10 +53,8 @@ pub enum Uf {
 pub enum UfParseError {
     /// Empty input after trimming.
     Empty,
-
     /// Input must have exactly length 2.
     WrongLength(usize),
-
     /// Code not recognized among official UF codes.
     InvalidCode(String),
 }
@@ -79,50 +77,44 @@ impl FromStr for Uf {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         use Uf::*;
-
         let trimmed = s.trim();
         if trimmed.is_empty() {
             return Err(UfParseError::Empty);
         }
-
         if trimmed.len() != 2 {
             return Err(UfParseError::WrongLength(trimmed.len()));
         }
 
-        let code = trimmed.to_ascii_uppercase();
-
-        let uf = match code.as_str() {
-            "AC" => AC,
-            "AL" => AL,
-            "AP" => AP,
-            "AM" => AM,
-            "BA" => BA,
-            "CE" => CE,
-            "DF" => DF,
-            "ES" => ES,
-            "GO" => GO,
-            "MA" => MA,
-            "MT" => MT,
-            "MS" => MS,
-            "MG" => MG,
-            "PA" => PA,
-            "PB" => PB,
-            "PR" => PR,
-            "PE" => PE,
-            "PI" => PI,
-            "RJ" => RJ,
-            "RN" => RN,
-            "RS" => RS,
-            "RO" => RO,
-            "RR" => RR,
-            "SC" => SC,
-            "SP" => SP,
-            "SE" => SE,
-            "TO" => TO,
-            _ => return Err(UfParseError::InvalidCode(code)),
-        };
-
-        Ok(uf)
+        match trimmed.to_ascii_uppercase().as_str() {
+            "AC" => Ok(AC),
+            "AL" => Ok(AL),
+            "AP" => Ok(AP),
+            "AM" => Ok(AM),
+            "BA" => Ok(BA),
+            "CE" => Ok(CE),
+            "DF" => Ok(DF),
+            "ES" => Ok(ES),
+            "GO" => Ok(GO),
+            "MA" => Ok(MA),
+            "MT" => Ok(MT),
+            "MS" => Ok(MS),
+            "MG" => Ok(MG),
+            "PA" => Ok(PA),
+            "PB" => Ok(PB),
+            "PR" => Ok(PR),
+            "PE" => Ok(PE),
+            "PI" => Ok(PI),
+            "RJ" => Ok(RJ),
+            "RN" => Ok(RN),
+            "RS" => Ok(RS),
+            "RO" => Ok(RO),
+            "RR" => Ok(RR),
+            "SC" => Ok(SC),
+            "SP" => Ok(SP),
+            "SE" => Ok(SE),
+            "TO" => Ok(TO),
+            _ => Err(UfParseError::InvalidCode(trimmed.to_string())),
+        }
     }
 }
 
@@ -132,48 +124,132 @@ impl fmt::Display for Uf {
     }
 }
 
+impl Uf {
+    /// Returns the full Portuguese name of the state.
+    pub fn full_name(&self) -> &'static str {
+        use Uf::*;
+        match self {
+            AC => "Acre",
+            AL => "Alagoas",
+            AP => "Amapá",
+            AM => "Amazonas",
+            BA => "Bahia",
+            CE => "Ceará",
+            DF => "Distrito Federal",
+            ES => "Espírito Santo",
+            GO => "Goiás",
+            MA => "Maranhão",
+            MT => "Mato Grosso",
+            MS => "Mato Grosso do Sul",
+            MG => "Minas Gerais",
+            PA => "Pará",
+            PB => "Paraíba",
+            PR => "Paraná",
+            PE => "Pernambuco",
+            PI => "Piauí",
+            RJ => "Rio de Janeiro",
+            RN => "Rio Grande do Norte",
+            RS => "Rio Grande do Sul",
+            RO => "Rondônia",
+            RR => "Roraima",
+            SC => "Santa Catarina",
+            SP => "São Paulo",
+            SE => "Sergipe",
+            TO => "Tocantins",
+        }
+    }
+
+    /// Returns an iterator over all `Uf` variants.
+    ///
+    /// Note: For arrays, `into_iter()` yields items by value, so no `.copied()` is needed.
+    #[inline]
+    pub fn iter() -> impl Iterator<Item = Uf> {
+        [
+            Uf::AC,
+            Uf::AL,
+            Uf::AP,
+            Uf::AM,
+            Uf::BA,
+            Uf::CE,
+            Uf::DF,
+            Uf::ES,
+            Uf::GO,
+            Uf::MA,
+            Uf::MT,
+            Uf::MS,
+            Uf::MG,
+            Uf::PA,
+            Uf::PB,
+            Uf::PR,
+            Uf::PE,
+            Uf::PI,
+            Uf::RJ,
+            Uf::RN,
+            Uf::RS,
+            Uf::RO,
+            Uf::RR,
+            Uf::SC,
+            Uf::SP,
+            Uf::SE,
+            Uf::TO,
+        ]
+        .into_iter()
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-
     use super::*;
+    use std::collections::HashSet;
 
+    /// Ensures that valid UF codes can be parsed correctly.
     #[test]
     fn uf_parses_valid() {
         assert_eq!(Uf::from_str("SP").unwrap(), Uf::SP);
-        assert_eq!(Uf::from_str("RJ").unwrap(), Uf::RJ);
-        assert_eq!(Uf::from_str("ba").unwrap(), Uf::BA);
+        assert_eq!(Uf::from_str("rj").unwrap(), Uf::RJ);
+        assert_eq!(Uf::from_str(" ba ").unwrap(), Uf::BA);
     }
 
+    /// Ensures that parsing fails for empty strings and invalid codes.
     #[test]
-    fn uf_trims() {
-        assert_eq!(Uf::from_str("  mg ").unwrap(), Uf::MG);
+    fn uf_parsing_errors() {
+        assert!(matches!(Uf::from_str(""), Err(UfParseError::Empty)));
+        assert!(matches!(
+            Uf::from_str("S"),
+            Err(UfParseError::WrongLength(1))
+        ));
+        assert!(matches!(
+            Uf::from_str("XYZ"),
+            Err(UfParseError::WrongLength(3))
+        ));
+        assert!(matches!(
+            Uf::from_str("ZZ"),
+            Err(UfParseError::InvalidCode(_))
+        ));
     }
 
+    /// Validates the display implementation.
     #[test]
-    fn uf_rejects_empty() {
-        let err = Uf::from_str("   ").unwrap_err();
-        assert_eq!(err, UfParseError::Empty);
-    }
-
-    #[test]
-    fn uf_rejects_wrong_length() {
-        let err = Uf::from_str("S").unwrap_err();
-        assert!(matches!(err, UfParseError::WrongLength(1)));
-
-        let err = Uf::from_str("SPO").unwrap_err();
-        assert!(matches!(err, UfParseError::WrongLength(3)));
-    }
-
-    #[test]
-    fn uf_rejects_invalid() {
-        let err = Uf::from_str("ZZ").unwrap_err();
-        assert_eq!(err, UfParseError::InvalidCode("ZZ".into()));
-    }
-
-    #[test]
-    fn uf_display_prints_abbreviation() {
+    fn uf_display_abbreviation() {
         assert_eq!(Uf::SP.to_string(), "SP");
-        assert_eq!(Uf::RR.to_string().to_ascii_uppercase(), "RR");
+        assert_eq!(Uf::RR.to_string(), "RR");
+    }
+
+    /// Ensures that the full name mapping works correctly.
+    #[test]
+    fn uf_full_name_mapping() {
+        assert_eq!(Uf::SP.full_name(), "São Paulo");
+        assert_eq!(Uf::RJ.full_name(), "Rio de Janeiro");
+        assert_eq!(Uf::DF.full_name(), "Distrito Federal");
+    }
+
+    /// Validates that iteration covers all 27 federative units with no duplicates.
+    #[test]
+    fn uf_iteration_covers_all() {
+        let all: HashSet<_> = Uf::iter().collect();
+        assert_eq!(all.len(), 27, "Expected 27 federative units");
+        assert!(all.contains(&Uf::SP));
+        assert!(all.contains(&Uf::AC));
+        assert!(all.contains(&Uf::TO));
     }
 }

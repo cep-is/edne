@@ -8,9 +8,9 @@ edne:
 - [x] Parser Big User (Grande usuário)
 - [x] Parser Operational Unit (Unidade Operacional)
 - [x] Parser Caixa Postal Comunitária(CPC)
-- [ ] Uf type
-  - [ ] Add Iterate
-  - [ ] Add method to return state name based on Uf
+- [x] Uf type
+  - [x] Add Iterate
+  - [x] Add method to return full state name based on Uf
 
 cli:
 
