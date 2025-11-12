@@ -19,5 +19,6 @@
 pub use crate::models::locality::{
     LocalityIdError, LocalitySituationError, LocalityTypeError,
 };
+pub use crate::models::neighborhood::NeighborhoodIdError;
 pub use crate::models::uf::UfParseError;
 pub use crate::parser::base::ParseError;

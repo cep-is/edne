@@ -15,7 +15,10 @@
 //
 
 pub mod locality;
-pub mod uf;
-
 pub use locality::{Locality, LocalityId, LocalitySituation, LocalityType};
+
+pub mod uf;
 pub use uf::Uf;
+
+pub mod neighborhood;
+pub use neighborhood::{Neighborhood, NeighborhoodId};

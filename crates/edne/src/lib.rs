@@ -49,4 +49,4 @@ pub mod models;
 pub mod parser;
 
 pub use error::ParseError;
-pub use models::{Locality, LocalityId, Uf};
+pub use models::{Locality, LocalityId, Neighborhood, NeighborhoodId, Uf};

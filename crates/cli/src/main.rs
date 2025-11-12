@@ -17,19 +17,45 @@
 use std::{env, fs, process};
 
 use edne::parser::localities::Localities;
+use edne::parser::neighborhoods::Neighborhoods;
+
+enum FileType {
+    Locality,
+    Neighborhood,
+}
+
+fn print_usage(program: &str) {
+    eprintln!("Usage: {} <type> <path-to-file>", program);
+    eprintln!();
+    eprintln!("Types:");
+    eprintln!("  locality      Parse LOG_LOCALIDADE.TXT file");
+    eprintln!("  neighborhood  Parse LOG_BAIRRO.TXT file");
+    eprintln!();
+    eprintln!("Examples:");
+    eprintln!("  {} locality LOG_LOCALIDADE.TXT", program);
+    eprintln!("  {} neighborhood LOG_BAIRRO.TXT", program);
+}
 
 fn main() {
     let args: Vec<String> = env::args().collect();
 
-    if args.len() != 2 {
-        eprintln!("Usage: {} <path-to-locality-file>", args[0]);
-        eprintln!();
-        eprintln!("Example:");
-        eprintln!("  {} LOG_LOCALIDADE.TXT", args[0]);
+    if args.len() != 3 {
+        print_usage(&args[0]);
         process::exit(1);
     }
 
-    let file_path = &args[1];
+    let file_type = match args[1].to_lowercase().as_str() {
+        "locality" | "localidade" => FileType::Locality,
+        "neighborhood" | "neighbourhood" | "bairro" => FileType::Neighborhood,
+        unknown => {
+            eprintln!("Error: Unknown type '{}'", unknown);
+            eprintln!();
+            print_usage(&args[0]);
+            process::exit(1);
+        }
+    };
+
+    let file_path = &args[2];
 
     println!("Reading file: {}", file_path);
 
@@ -41,9 +67,16 @@ fn main() {
         }
     };
 
+    match file_type {
+        FileType::Locality => parse_localities(&bytes),
+        FileType::Neighborhood => parse_neighborhoods(&bytes),
+    }
+}
+
+fn parse_localities(bytes: &[u8]) {
     println!("Parsing localities...");
 
-    let localities = match Localities::from_iso8859_1(&bytes) {
+    let localities = match Localities::from_iso8859_1(bytes) {
         Ok(data) => data,
         Err(e) => {
             eprintln!("Error parsing file: {}", e);
@@ -160,6 +193,108 @@ fn main() {
             .get(&edne::models::LocalitySituation::CodingInProgress)
             .unwrap_or(&0)
     );
+
+    println!();
+}
+
+fn parse_neighborhoods(bytes: &[u8]) {
+    println!("Parsing neighborhoods...");
+
+    let neighborhoods = match Neighborhoods::from_iso8859_1(bytes) {
+        Ok(data) => data,
+        Err(e) => {
+            eprintln!("Error parsing file: {}", e);
+            process::exit(1);
+        }
+    };
+
+    println!();
+    println!("═══════════════════════════════════════════════════════");
+    println!("  Successfully parsed {} neighborhoods", neighborhoods.len());
+    println!("═══════════════════════════════════════════════════════");
+    println!();
+
+    // Print neighborhoods grouped by UF
+    println!("Neighborhoods by State:");
+    println!("───────────────────────────────────────────────────────");
+
+    let mut by_uf: std::collections::HashMap<_, Vec<_>> =
+        std::collections::HashMap::new();
+    for (id, neighborhood) in neighborhoods.iter() {
+        by_uf.entry(neighborhood.uf).or_default().push((id, neighborhood));
+    }
+
+    let mut ufs: Vec<_> = by_uf.keys().collect();
+    ufs.sort();
+
+    for uf in ufs {
+        let hoods = &by_uf[uf];
+        println!();
+        println!("{} ({} neighborhoods)", uf, hoods.len());
+        println!("───────────────────────────────────────────────────────");
+
+        let mut sorted_hoods = hoods.clone();
+        sorted_hoods.sort_by_key(|(id, _)| *id);
+
+        for (id, neighborhood) in sorted_hoods.iter().take(10) {
+            print!("  [{}] {}", id, neighborhood.name);
+            print!(" (Locality: {})", neighborhood.locality_id);
+
+            if let Some(abbrev) = &neighborhood.abbreviated_name {
+                print!(" [{}]", abbrev);
+            }
+
+            println!();
+        }
+
+        if hoods.len() > 10 {
+            println!("  ... and {} more", hoods.len() - 10);
+        }
+    }
+
+    println!();
+    println!("═══════════════════════════════════════════════════════");
+    println!("  Summary");
+    println!("═══════════════════════════════════════════════════════");
+
+    // Count by locality
+    let mut by_locality: std::collections::HashMap<_, usize> =
+        std::collections::HashMap::new();
+    for (_, neighborhood) in neighborhoods.iter() {
+        *by_locality.entry(neighborhood.locality_id).or_default() += 1;
+    }
+
+    println!();
+    println!("Statistics:");
+    println!("  Total neighborhoods:     {}", neighborhoods.len());
+    println!("  Localities with hoods:   {}", by_locality.len());
+
+    let with_abbrev = neighborhoods
+        .iter()
+        .filter(|(_, n)| n.abbreviated_name.is_some())
+        .count();
+    let without_abbrev = neighborhoods.len() - with_abbrev;
+
+    println!(
+        "  With abbreviation:       {} ({:.1}%)",
+        with_abbrev,
+        (with_abbrev as f64 / neighborhoods.len() as f64) * 100.0
+    );
+    println!(
+        "  Without abbreviation:    {} ({:.1}%)",
+        without_abbrev,
+        (without_abbrev as f64 / neighborhoods.len() as f64) * 100.0
+    );
+
+    // Top localities by neighborhood count
+    println!();
+    println!("Top 10 localities by neighborhood count:");
+    let mut locality_counts: Vec<_> = by_locality.iter().collect();
+    locality_counts.sort_by(|a, b| b.1.cmp(a.1));
+
+    for (locality_id, count) in locality_counts.iter().take(10) {
+        println!("  Locality {}: {} neighborhoods", locality_id, count);
+    }
 
     println!();
 }
