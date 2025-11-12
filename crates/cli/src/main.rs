@@ -14,13 +14,21 @@
 // OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //
 
-use edne::parser::addresses::Addresses;
-use edne::parser::big_users::BigUsers;
-use edne::parser::cpcs::Cpcs;
-use edne::parser::localities::Localities;
-use edne::parser::neighborhoods::Neighborhoods;
-use edne::parser::operational_units::OperationalUnits;
-use std::{env, fs, process};
+mod cep_lookup;
+
+use cep_lookup::{CepInfo, CepLookupBuilder, CepType};
+use edne::parser::{
+    addresses::Addresses, big_users::BigUsers, cpcs::Cpcs,
+    localities::Localities, neighborhoods::Neighborhoods,
+    operational_units::OperationalUnits,
+};
+use std::{env, fs, path::Path, process};
+
+enum Command {
+    Parse(FileType, String),
+    BuildIndex(String),
+    Lookup(String, String),
+}
 
 enum FileType {
     Locality,
@@ -32,7 +40,17 @@ enum FileType {
 }
 
 fn print_usage(program: &str) {
-    eprintln!("Usage: {} <type> <path-to-file>", program);
+    eprintln!("Usage: {} <command> [args]", program);
+    eprintln!();
+    eprintln!("Commands:");
+    eprintln!("  Parse single file:");
+    eprintln!("    {} <type> <path-to-file>", program);
+    eprintln!();
+    eprintln!("  Build CEP lookup index:");
+    eprintln!("    {} build-index <data-directory>", program);
+    eprintln!();
+    eprintln!("  Lookup CEP:");
+    eprintln!("    {} lookup <data-directory> <cep>", program);
     eprintln!();
     eprintln!("Types:");
     eprintln!("  locality      Parse LOG_LOCALIDADE.TXT file");
@@ -44,43 +62,86 @@ fn print_usage(program: &str) {
     eprintln!();
     eprintln!("Examples:");
     eprintln!("  {} locality LOG_LOCALIDADE.TXT", program);
-    eprintln!("  {} neighborhood LOG_BAIRRO.TXT", program);
-    eprintln!("  {} cpc LOG_CPC.TXT", program);
-    eprintln!("  {} biguser LOG_GRANDE_USUARIO.TXT", program);
-    eprintln!("  {} opunit LOG_UNID_OPER.TXT", program);
-    eprintln!("  {} address LOG_LOGRADOURO_AC.TXT", program);
+    eprintln!("  {} build-index data", program);
+    eprintln!("  {} lookup data 69918703", program);
 }
 
 fn main() {
     let args: Vec<String> = env::args().collect();
 
-    if args.len() != 3 {
+    if args.len() < 2 {
         print_usage(&args[0]);
         process::exit(1);
     }
 
-    let file_type = match args[1].to_lowercase().as_str() {
-        "locality" | "localidade" => FileType::Locality,
-        "neighborhood" | "neighbourhood" | "bairro" => FileType::Neighborhood,
-        "cpc" => FileType::Cpc,
-        "biguser" | "big-user" | "grande-usuario" | "grandeusuario" => {
-            FileType::BigUser
-        }
-        "opunit"
-        | "operational-unit"
-        | "unidade-operacional"
-        | "unidadeoperacional" => FileType::OperationalUnit,
-        "address" | "logradouro" | "street" => FileType::Address,
-        unknown => {
-            eprintln!("Error: Unknown type '{}'", unknown);
-            eprintln!();
-            print_usage(&args[0]);
-            process::exit(1);
-        }
-    };
+    let command = parse_command(&args);
 
-    let file_path = &args[2];
+    match command {
+        Command::Parse(file_type, file_path) => {
+            parse_file(file_type, &file_path);
+        }
+        Command::BuildIndex(data_dir) => {
+            build_index(&data_dir);
+        }
+        Command::Lookup(data_dir, cep) => {
+            lookup_cep(&data_dir, &cep);
+        }
+    }
+}
 
+fn parse_command(args: &[String]) -> Command {
+    match args[1].to_lowercase().as_str() {
+        "build-index" => {
+            if args.len() != 3 {
+                eprintln!("Error: build-index requires data directory");
+                eprintln!();
+                print_usage(&args[0]);
+                process::exit(1);
+            }
+            Command::BuildIndex(args[2].clone())
+        }
+        "lookup" => {
+            if args.len() != 4 {
+                eprintln!("Error: lookup requires data directory and CEP");
+                eprintln!();
+                print_usage(&args[0]);
+                process::exit(1);
+            }
+            Command::Lookup(args[2].clone(), args[3].clone())
+        }
+        type_str => {
+            if args.len() != 3 {
+                print_usage(&args[0]);
+                process::exit(1);
+            }
+
+            let file_type = match type_str {
+                "locality" | "localidade" => FileType::Locality,
+                "neighborhood" | "neighbourhood" | "bairro" => {
+                    FileType::Neighborhood
+                }
+                "cpc" => FileType::Cpc,
+                "biguser" | "big-user" | "grande-usuario"
+                | "grandeusuario" => FileType::BigUser,
+                "opunit"
+                | "operational-unit"
+                | "unidade-operacional"
+                | "unidadeoperacional" => FileType::OperationalUnit,
+                "address" | "logradouro" | "street" => FileType::Address,
+                unknown => {
+                    eprintln!("Error: Unknown command or type '{}'", unknown);
+                    eprintln!();
+                    print_usage(&args[0]);
+                    process::exit(1);
+                }
+            };
+
+            Command::Parse(file_type, args[2].clone())
+        }
+    }
+}
+
+fn parse_file(file_type: FileType, file_path: &str) {
     println!("Reading file: {}", file_path);
 
     let bytes = match fs::read(file_path) {
@@ -99,6 +160,176 @@ fn main() {
         FileType::OperationalUnit => parse_operational_units(&bytes),
         FileType::Address => parse_addresses(&bytes),
     }
+}
+
+fn build_index(data_dir: &str) {
+    println!("Building CEP index from: {}", data_dir);
+    println!();
+
+    let lookup = match build_cep_lookup(data_dir) {
+        Ok(lookup) => lookup,
+        Err(e) => {
+            eprintln!("Error building index: {}", e);
+            process::exit(1);
+        }
+    };
+
+    println!();
+    println!("═══════════════════════════════════════════════════════");
+    println!("  Index built successfully!");
+    println!("═══════════════════════════════════════════════════════");
+    println!();
+    println!("Total CEPs indexed: {}", lookup.len());
+    println!();
+    println!("Statistics by UF:");
+    println!("───────────────────────────────────────────────────────");
+
+    let mut by_uf: std::collections::HashMap<_, usize> =
+        std::collections::HashMap::new();
+    for uf in edne::models::Uf::iter() {
+        let count = lookup.by_uf(uf).len();
+        if count > 0 {
+            by_uf.insert(uf, count);
+        }
+    }
+
+    let mut ufs: Vec<_> = by_uf.iter().collect();
+    ufs.sort_by_key(|(uf, _)| *uf);
+
+    for (uf, count) in ufs {
+        println!("  {}: {:>8} CEPs", uf, count);
+    }
+
+    println!();
+}
+
+fn lookup_cep(data_dir: &str, cep: &str) {
+    println!("Loading data and building index...");
+    println!();
+
+    let lookup = match build_cep_lookup(data_dir) {
+        Ok(lookup) => lookup,
+        Err(e) => {
+            eprintln!("Error building index: {}", e);
+            process::exit(1);
+        }
+    };
+
+    println!();
+    println!("═══════════════════════════════════════════════════════");
+    println!("  Searching for CEP: {}", cep);
+    println!("═══════════════════════════════════════════════════════");
+    println!();
+
+    match lookup.lookup(cep) {
+        Some(info) => {
+            print_cep_info(info);
+        }
+        None => {
+            println!("CEP not found: {}", cep);
+            println!();
+            println!(
+                "The CEP may not exist or the data files may be incomplete."
+            );
+        }
+    }
+
+    println!();
+}
+
+fn print_cep_info(info: &CepInfo) {
+    println!("CEP:        {}", info.cep);
+    println!("UF:         {} ({})", info.uf, info.uf.full_name());
+    println!("Locality:   {}", info.locality);
+
+    if let Some(neighborhood) = &info.neighborhood {
+        println!("Neighborhood: {}", neighborhood);
+    }
+
+    if !info.address.is_empty() {
+        println!("Address:    {}", info.address);
+    }
+
+    if let Some(complement) = &info.complement {
+        println!("Complement: {}", complement);
+    }
+
+    let type_str = match info.type_ {
+        CepType::UncodedLocality => "Uncoded Locality (General CEP)",
+        CepType::Street => "Street/Address",
+        CepType::BigUser => "Big User",
+        CepType::OperationalUnit => "Operational Unit",
+        CepType::Cpc => "Community Postal Box (CPC)",
+    };
+    println!("Type:       {}", type_str);
+}
+
+fn build_cep_lookup(
+    data_dir: &str,
+) -> Result<cep_lookup::CepLookup, Box<dyn std::error::Error>> {
+    let mut builder = CepLookupBuilder::new();
+
+    println!("Loading eDNE data...");
+
+    // Load LOG_LOCALIDADE
+    let loc_path = format!("{}/log/LOG_LOCALIDADE.TXT", data_dir);
+    if Path::new(&loc_path).exists() {
+        let bytes = fs::read(&loc_path)?;
+        let localities = Localities::from_iso8859_1(&bytes)?;
+        println!("✓ {} localities", localities.len());
+        builder.add_localities(localities);
+    }
+
+    // Load LOG_BAIRRO
+    let neighborhood_path = format!("{}/log/LOG_BAIRRO.TXT", data_dir);
+    if Path::new(&neighborhood_path).exists() {
+        let bytes = fs::read(&neighborhood_path)?;
+        let neighborhoods = Neighborhoods::from_iso8859_1(&bytes)?;
+        println!("✓ {} neighborhoods", neighborhoods.len());
+        builder.add_neighborhoods(neighborhoods);
+    }
+
+    // Load all LOG_LOGRADOURO_XX
+    for uf in edne::models::Uf::iter() {
+        let log_path = format!("{}/log/LOG_LOGRADOURO_{}.TXT", data_dir, uf);
+        if Path::new(&log_path).exists() {
+            let bytes = fs::read(&log_path)?;
+            let addresses = Addresses::from_iso8859_1(&bytes)?;
+            println!("✓ {} addresses ({})", addresses.len(), uf);
+            builder.add_addresses(addresses);
+        }
+    }
+
+    // Load LOG_GRANDE_USUARIO
+    let gu_path = format!("{}/log/LOG_GRANDE_USUARIO.TXT", data_dir);
+    if Path::new(&gu_path).exists() {
+        let bytes = fs::read(&gu_path)?;
+        let big_users = BigUsers::from_iso8859_1(&bytes)?;
+        println!("✓ {} big users", big_users.len());
+        builder.add_big_users(big_users);
+    }
+
+    // Load LOG_UNID_OPER
+    let uo_path = format!("{}/log/LOG_UNID_OPER.TXT", data_dir);
+    if Path::new(&uo_path).exists() {
+        let bytes = fs::read(&uo_path)?;
+        let units = OperationalUnits::from_iso8859_1(&bytes)?;
+        println!("✓ {} operational units", units.len());
+        builder.add_operational_units(units);
+    }
+
+    // Load LOG_CPC
+    let cpc_path = format!("{}/log/LOG_CPC.TXT", data_dir);
+    if Path::new(&cpc_path).exists() {
+        let bytes = fs::read(&cpc_path)?;
+        let cpcs = Cpcs::from_iso8859_1(&bytes)?;
+        println!("✓ {} CPCs", cpcs.len());
+        builder.add_cpcs(cpcs);
+    }
+
+    println!();
+    println!("Building CEP index...");
+    Ok(builder.build())
 }
 
 fn parse_localities(bytes: &[u8]) {
